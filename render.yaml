@@ -1,0 +1,24 @@
+# Render.com deployment blueprint
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: tax-analyzer
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free              # change to 'starter' or 'standard' for production
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: "10000"      # Render assigns 10000 by default
+      - key: DATA_FILE
+        value: /data/tax_data.csv
+      - key: DATA_ROWS
+        value: "500"
+      - key: DATA_SEED
+        value: "42"
+      - key: LOG_LEVEL
+        value: info
+      - key: CORS_ORIGINS
+        value: "*"
