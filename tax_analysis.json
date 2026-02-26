@@ -1,0 +1,403 @@
+{
+  "summary": {
+    "total_taxpayers": 500,
+    "total_income_reported": 69411069.92,
+    "total_federal_tax": 10506734.71,
+    "total_state_tax": 2240361.13,
+    "total_fica": 4057217.87,
+    "total_tax_collected": 16804313.71,
+    "overall_effective_rate": 24.21,
+    "total_refunds_issued": 364085.48,
+    "total_tax_owed": 424865.51,
+    "avg_income": 138822.14,
+    "avg_total_tax": 33608.63
+  },
+  "income": {
+    "overall_stats": {
+      "count": 500,
+      "mean": 138822.14,
+      "median": 111170.52,
+      "stdev": 109450.49,
+      "min": 12191.84,
+      "max": 625388.18,
+      "total": 69411069.92
+    },
+    "bracket_distribution": {
+      "< $25k": {
+        "count": 13,
+        "percent": 2.6
+      },
+      "$25k \u2013 $50k": {
+        "count": 80,
+        "percent": 16.0
+      },
+      "$50k \u2013 $75k": {
+        "count": 71,
+        "percent": 14.2
+      },
+      "$75k \u2013 $100k": {
+        "count": 64,
+        "percent": 12.8
+      },
+      "$100k \u2013 $150k": {
+        "count": 109,
+        "percent": 21.8
+      },
+      "$150k \u2013 $200k": {
+        "count": 64,
+        "percent": 12.8
+      },
+      "$200k \u2013 $500k": {
+        "count": 94,
+        "percent": 18.8
+      },
+      "> $500k": {
+        "count": 5,
+        "percent": 1.0
+      }
+    },
+    "by_income_source": {
+      "wages": {
+        "count": 119,
+        "mean": 148394.56,
+        "median": 141241.13,
+        "stdev": 76114.89,
+        "min": 26581.95,
+        "max": 304900.23,
+        "total": 17658952.63
+      },
+      "self_employment": {
+        "count": 96,
+        "mean": 118969.44,
+        "median": 123526.23,
+        "stdev": 62658.15,
+        "min": 18686.68,
+        "max": 226911.56,
+        "total": 11421066.34
+      },
+      "rental": {
+        "count": 106,
+        "mean": 92969.09,
+        "median": 84109.3,
+        "stdev": 47938.83,
+        "min": 14710.43,
+        "max": 198258.16,
+        "total": 9854723.84
+      },
+      "retirement": {
+        "count": 101,
+        "mean": 69389.0,
+        "median": 65181.56,
+        "stdev": 30565.66,
+        "min": 24600.15,
+        "max": 140272.31,
+        "total": 7008289.46
+      },
+      "investment": {
+        "count": 78,
+        "mean": 300872.28,
+        "median": 317489.6,
+        "stdev": 152023.99,
+        "min": 12191.84,
+        "max": 625388.18,
+        "total": 23468037.65
+      }
+    }
+  },
+  "tax_rates": {
+    "effective_rate_stats": {
+      "count": 500,
+      "mean": 20.32,
+      "median": 20.38,
+      "stdev": 6.67,
+      "min": 3.89,
+      "max": 40.82,
+      "total": 10162.13
+    },
+    "marginal_rate_stats": {
+      "count": 500,
+      "mean": 19.71,
+      "median": 22.0,
+      "stdev": 7.27,
+      "min": 10.0,
+      "max": 35.0,
+      "total": 9853.0
+    },
+    "marginal_distribution": {
+      "10%": 57,
+      "12%": 130,
+      "22%": 154,
+      "24%": 105,
+      "32%": 25,
+      "35%": 29
+    },
+    "by_filing_status": {
+      "single": {
+        "count": 148,
+        "avg_effective": 22.69,
+        "avg_federal_tax": 22772.33
+      },
+      "married": {
+        "count": 184,
+        "avg_effective": 17.74,
+        "avg_federal_tax": 18291.48
+      },
+      "hoh": {
+        "count": 168,
+        "avg_effective": 21.07,
+        "avg_federal_tax": 22445.23
+      }
+    }
+  },
+  "deductions": {
+    "itemizer_count": 140,
+    "standard_filer_count": 360,
+    "itemizer_pct": 28.0,
+    "avg_itemized_total": 42558.57,
+    "avg_standard_deduction": 22792.22,
+    "category_breakdown": {
+      "mortgage_interest": {
+        "count": 140,
+        "mean": 7158.52,
+        "median": 3239.83,
+        "stdev": 8608.22,
+        "min": 0.0,
+        "max": 29351.67,
+        "total": 1002192.97
+      },
+      "charitable_giving": {
+        "count": 140,
+        "mean": 6611.81,
+        "median": 1125.9,
+        "stdev": 8057.44,
+        "min": 0.0,
+        "max": 29252.46,
+        "total": 925653.22
+      },
+      "medical_expenses": {
+        "count": 140,
+        "mean": 6320.7,
+        "median": 0.0,
+        "stdev": 8404.71,
+        "min": 0.0,
+        "max": 28662.81,
+        "total": 884897.67
+      },
+      "salt_deduction": {
+        "count": 140,
+        "mean": 7911.25,
+        "median": 4422.87,
+        "stdev": 9091.32,
+        "min": 0.0,
+        "max": 29714.54,
+        "total": 1107575.53
+      }
+    },
+    "avg_tax_savings_itemize": 5147.03
+  },
+  "refunds": {
+    "refund_count": 244,
+    "owed_count": 256,
+    "refund_stats": {
+      "count": 244,
+      "mean": 1492.15,
+      "median": 616.38,
+      "stdev": 2302.27,
+      "min": 0.0,
+      "max": 18081.88,
+      "total": 364085.48
+    },
+    "owed_stats": {
+      "count": 256,
+      "mean": 1659.63,
+      "median": 714.99,
+      "stdev": 2648.35,
+      "min": 0.5,
+      "max": 17958.08,
+      "total": 424865.51
+    },
+    "bucket_distribution": {
+      "Refund > $5k": 15,
+      "Refund $2k\u2013$5k": 46,
+      "Refund $1\u2013$2k": 166,
+      "Roughly even (\u00b1$1)": 17,
+      "Owe $1\u2013$1k": 149,
+      "Owe $1k\u2013$5k": 86,
+      "Owe > $5k": 19
+    },
+    "over_withheld_pct": 48.8
+  },
+  "by_state": {
+    "CA": {
+      "count": 50,
+      "avg_income": 138319.52,
+      "avg_state_tax": 10166.54,
+      "avg_federal_tax": 20526.36,
+      "avg_total_tax": 38929.41,
+      "avg_effective_rate": 23.47,
+      "total_state_revenue": 508326.98
+    },
+    "FL": {
+      "count": 46,
+      "avg_income": 155678.94,
+      "avg_state_tax": 0.0,
+      "avg_federal_tax": 23962.85,
+      "avg_total_tax": 32949.42,
+      "avg_effective_rate": 18.89,
+      "total_state_revenue": 0.0
+    },
+    "GA": {
+      "count": 40,
+      "avg_income": 127262.85,
+      "avg_state_tax": 5597.9,
+      "avg_federal_tax": 20872.16,
+      "avg_total_tax": 33675.08,
+      "avg_effective_rate": 20.29,
+      "total_state_revenue": 223916.13
+    },
+    "IL": {
+      "count": 53,
+      "avg_income": 114074.17,
+      "avg_state_tax": 4277.63,
+      "avg_federal_tax": 14806.66,
+      "avg_total_tax": 26354.87,
+      "avg_effective_rate": 19.49,
+      "total_state_revenue": 226714.52
+    },
+    "NC": {
+      "count": 50,
+      "avg_income": 125520.28,
+      "avg_state_tax": 5117.99,
+      "avg_federal_tax": 17787.8,
+      "avg_total_tax": 30399.01,
+      "avg_effective_rate": 20.37,
+      "total_state_revenue": 255899.48
+    },
+    "NY": {
+      "count": 50,
+      "avg_income": 156700.62,
+      "avg_state_tax": 8811.02,
+      "avg_federal_tax": 24925.87,
+      "avg_total_tax": 42478.31,
+      "avg_effective_rate": 23.66,
+      "total_state_revenue": 440550.99
+    },
+    "OH": {
+      "count": 51,
+      "avg_income": 160862.78,
+      "avg_state_tax": 5308.96,
+      "avg_federal_tax": 26270.92,
+      "avg_total_tax": 40548.96,
+      "avg_effective_rate": 21.72,
+      "total_state_revenue": 270757.2
+    },
+    "TX": {
+      "count": 51,
+      "avg_income": 141281.07,
+      "avg_state_tax": 0.0,
+      "avg_federal_tax": 20523.39,
+      "avg_total_tax": 29033.6,
+      "avg_effective_rate": 17.68,
+      "total_state_revenue": 0.0
+    },
+    "VA": {
+      "count": 50,
+      "avg_income": 140531.74,
+      "avg_state_tax": 6283.92,
+      "avg_federal_tax": 20922.58,
+      "avg_total_tax": 35375.04,
+      "avg_effective_rate": 21.04,
+      "total_state_revenue": 314195.83
+    },
+    "WA": {
+      "count": 59,
+      "avg_income": 129668.63,
+      "avg_state_tax": 0.0,
+      "avg_federal_tax": 20172.27,
+      "avg_total_tax": 27746.27,
+      "avg_effective_rate": 17.16,
+      "total_state_revenue": 0.0
+    }
+  },
+  "capital_gains": {
+    "cg_filer_count": 256,
+    "cg_filer_pct": 51.2,
+    "capital_gains_stats": {
+      "count": 256,
+      "mean": 18011.32,
+      "median": 12206.42,
+      "stdev": 18608.48,
+      "min": 94.17,
+      "max": 125158.89,
+      "total": 4610897.56
+    },
+    "dividend_income_stats": {
+      "count": 200,
+      "mean": 6780.1,
+      "median": 4468.36,
+      "stdev": 7328.08,
+      "min": 21.49,
+      "max": 41220.29,
+      "total": 1356020.16
+    },
+    "avg_cg_pct_of_income": 12.74
+  },
+  "credits_dependents": {
+    "dependent_distribution": {
+      "0": 83,
+      "1": 81,
+      "2": 106,
+      "3": 105,
+      "4": 125
+    },
+    "credit_stats": {
+      "count": 500,
+      "mean": 4349.87,
+      "median": 4000.0,
+      "stdev": 2774.21,
+      "min": 0.0,
+      "max": 8000.0,
+      "total": 2174937.27
+    },
+    "avg_tax_by_dependents": {
+      "0": 42942.74,
+      "1": 37342.6,
+      "2": 31933.65,
+      "3": 29080.39,
+      "4": 30215.26
+    },
+    "avg_credit": 4349.87,
+    "total_credits_claimed": 2174937.27
+  },
+  "fica": {
+    "social_security_stats": {
+      "count": 500,
+      "mean": 6295.23,
+      "median": 6114.87,
+      "stdev": 3245.14,
+      "min": 551.66,
+      "max": 10453.2,
+      "total": 3147612.99
+    },
+    "medicare_stats": {
+      "count": 500,
+      "mean": 1819.21,
+      "median": 1430.09,
+      "stdev": 1449.66,
+      "min": 129.02,
+      "max": 7135.67,
+      "total": 909604.88
+    },
+    "fica_total_stats": {
+      "count": 500,
+      "mean": 8114.44,
+      "median": 7544.96,
+      "stdev": 4522.07,
+      "min": 680.68,
+      "max": 17588.87,
+      "total": 4057217.87
+    },
+    "avg_fica_pct_of_income": 6.48,
+    "total_fica_collected": 4057217.87
+  }
+}
