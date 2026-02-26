@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tax Data Analyzer</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-icon">&#9670;</span>
+    <span class="brand-name">TaxAnalyzer</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="#summary"       class="nav-link active" data-section="summary">
+      <span class="nav-icon">&#9632;</span> Dashboard
+    </a>
+    <a href="#income"        class="nav-link" data-section="income">
+      <span class="nav-icon">&#9650;</span> Income
+    </a>
+    <a href="#taxrates"      class="nav-link" data-section="taxrates">
+      <span class="nav-icon">&#9670;</span> Tax Rates
+    </a>
+    <a href="#deductions"    class="nav-link" data-section="deductions">
+      <span class="nav-icon">&#9711;</span> Deductions
+    </a>
+    <a href="#refunds"       class="nav-link" data-section="refunds">
+      <span class="nav-icon">&#8635;</span> Refunds
+    </a>
+    <a href="#state"         class="nav-link" data-section="state">
+      <span class="nav-icon">&#9741;</span> By State
+    </a>
+    <a href="#capgains"      class="nav-link" data-section="capgains">
+      <span class="nav-icon">&#9651;</span> Capital Gains
+    </a>
+    <a href="#credits"       class="nav-link" data-section="credits">
+      <span class="nav-icon">&#9733;</span> Credits
+    </a>
+    <a href="#fica"          class="nav-link" data-section="fica">
+      <span class="nav-icon">&#9654;</span> FICA
+    </a>
+    <a href="#records"       class="nav-link" data-section="records">
+      <span class="nav-icon">&#9776;</span> Records
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-regen" id="btnRegen">&#8635; Regenerate Data</button>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1 class="page-title" id="pageTitle">Dashboard</h1>
+      <span class="badge">Tax Year 2024</span>
+    </div>
+    <div class="topbar-right">
+      <div class="upload-wrap">
+        <label class="btn-upload" for="csvUpload">&#8679; Upload CSV</label>
+        <input type="file" id="csvUpload" accept=".csv" hidden />
+      </div>
+      <span class="status-dot" id="statusDot"></span>
+      <span class="status-text" id="statusText">Loading…</span>
+    </div>
+  </header>
+
+  <!-- ===== SECTION: SUMMARY ===== -->
+  <section class="section active" id="section-summary">
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Income by Source</h3>
+        <canvas id="chartIncomeSource"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Filing Status Mix</h3>
+        <canvas id="chartFilingStatus"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Tax Breakdown</h3>
+        <canvas id="chartTaxBreakdown"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: INCOME ===== -->
+  <section class="section" id="section-income">
+    <div class="charts-row">
+      <div class="chart-card wide">
+        <h3>Income Bracket Distribution</h3>
+        <canvas id="chartIncomeBrackets"></canvas>
+      </div>
+    </div>
+    <div class="stat-table-wrap">
+      <h3>Overall Income Statistics</h3>
+      <table class="stat-table" id="tblIncomeStats"></table>
+    </div>
+    <div class="stat-table-wrap">
+      <h3>Income by Source</h3>
+      <table class="stat-table" id="tblIncomeSource"></table>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: TAX RATES ===== -->
+  <section class="section" id="section-taxrates">
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Marginal Rate Distribution</h3>
+        <canvas id="chartMarginal"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Avg Effective Rate by Filing Status</h3>
+        <canvas id="chartEffectiveByStatus"></canvas>
+      </div>
+    </div>
+    <div class="stat-table-wrap">
+      <h3>Effective Tax Rate Statistics</h3>
+      <table class="stat-table" id="tblEffectiveStats"></table>
+    </div>
+    <div class="stat-table-wrap">
+      <h3>By Filing Status</h3>
+      <table class="stat-table" id="tblFilingStats"></table>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: DEDUCTIONS ===== -->
+  <section class="section" id="section-deductions">
+    <div class="kpi-grid" id="kpiDeductions"></div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Itemized vs Standard Filers</h3>
+        <canvas id="chartItemizedVsStd"></canvas>
+      </div>
+      <div class="chart-card wide">
+        <h3>Avg Itemized Category Amounts</h3>
+        <canvas id="chartItemizedCats"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: REFUNDS ===== -->
+  <section class="section" id="section-refunds">
+    <div class="kpi-grid" id="kpiRefunds"></div>
+    <div class="charts-row">
+      <div class="chart-card wide">
+        <h3>Refund / Owed Bucket Distribution</h3>
+        <canvas id="chartRefundBuckets"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Refund vs Owed Count</h3>
+        <canvas id="chartRefundOwed"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: STATE ===== -->
+  <section class="section" id="section-state">
+    <div class="charts-row">
+      <div class="chart-card wide">
+        <h3>Average Total Tax by State</h3>
+        <canvas id="chartStateTax"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Effective Rate by State</h3>
+        <canvas id="chartStateRate"></canvas>
+      </div>
+    </div>
+    <div class="stat-table-wrap">
+      <h3>State Comparison Table</h3>
+      <table class="stat-table" id="tblState"></table>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: CAPITAL GAINS ===== -->
+  <section class="section" id="section-capgains">
+    <div class="kpi-grid" id="kpiCapGains"></div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Capital Gains Statistics</h3>
+        <canvas id="chartCGStats"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Dividend Income Statistics</h3>
+        <canvas id="chartDivStats"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: CREDITS ===== -->
+  <section class="section" id="section-credits">
+    <div class="kpi-grid" id="kpiCredits"></div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Dependent Distribution</h3>
+        <canvas id="chartDependents"></canvas>
+      </div>
+      <div class="chart-card wide">
+        <h3>Avg Tax Liability by Number of Dependents</h3>
+        <canvas id="chartTaxByDeps"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: FICA ===== -->
+  <section class="section" id="section-fica">
+    <div class="kpi-grid" id="kpiFica"></div>
+    <div class="charts-row">
+      <div class="chart-card wide">
+        <h3>Social Security vs Medicare Breakdown</h3>
+        <canvas id="chartFICA"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: RECORDS ===== -->
+  <section class="section" id="section-records">
+    <div class="records-controls">
+      <span id="recordsTotal"></span>
+      <div class="pagination">
+        <button id="btnPrev" class="btn-page">&#8592; Prev</button>
+        <span id="pageInfo"></span>
+        <button id="btnNext" class="btn-page">Next &#8594;</button>
+      </div>
+    </div>
+    <div class="records-table-wrap">
+      <table class="records-table" id="tblRecords">
+        <thead id="tblRecordsHead"></thead>
+        <tbody id="tblRecordsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
