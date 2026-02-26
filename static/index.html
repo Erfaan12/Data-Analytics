@@ -3,246 +3,362 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tax Data Analyzer</title>
+  <title>TaxLens — Analytics Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css" />
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
-<!-- ===== SIDEBAR ===== -->
-<aside class="sidebar">
-  <div class="sidebar-brand">
-    <span class="brand-icon">&#9670;</span>
-    <span class="brand-name">TaxAnalyzer</span>
+<!-- ── AMBIENT BACKGROUND ── -->
+<div class="bg-canvas" aria-hidden="true">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+  <div class="grid-overlay"></div>
+</div>
+
+<!-- ── LOADING SCREEN ── -->
+<div class="loader-screen" id="loaderScreen">
+  <div class="loader-inner">
+    <div class="loader-logo">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <path d="M24 4L44 14V34L24 44L4 34V14L24 4Z" stroke="url(#lg1)" stroke-width="2" fill="none"/>
+        <path d="M24 12L36 18V30L24 36L12 30V18L24 12Z" fill="url(#lg2)" opacity="0.3"/>
+        <circle cx="24" cy="24" r="5" fill="url(#lg1)"/>
+        <defs>
+          <linearGradient id="lg1" x1="4" y1="4" x2="44" y2="44">
+            <stop offset="0%" stop-color="#818cf8"/>
+            <stop offset="100%" stop-color="#22d3ee"/>
+          </linearGradient>
+          <linearGradient id="lg2" x1="12" y1="12" x2="36" y2="36">
+            <stop offset="0%" stop-color="#818cf8"/>
+            <stop offset="100%" stop-color="#22d3ee"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <div class="loader-title">TaxLens</div>
+    <div class="loader-bar"><div class="loader-fill" id="loaderFill"></div></div>
+    <div class="loader-label" id="loaderLabel">Initializing…</div>
   </div>
+</div>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <svg class="brand-gem" width="32" height="32" viewBox="0 0 48 48" fill="none">
+      <path d="M24 4L44 14V34L24 44L4 34V14L24 4Z" stroke="url(#bgg)" stroke-width="1.5" fill="none"/>
+      <circle cx="24" cy="24" r="5" fill="url(#bgg)"/>
+      <defs>
+        <linearGradient id="bgg" x1="4" y1="4" x2="44" y2="44">
+          <stop offset="0%" stop-color="#818cf8"/>
+          <stop offset="100%" stop-color="#22d3ee"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="brand-text">
+      <span class="brand-name">TaxLens</span>
+      <span class="brand-sub">Analytics</span>
+    </div>
+  </div>
+
   <nav class="sidebar-nav">
-    <a href="#summary"       class="nav-link active" data-section="summary">
-      <span class="nav-icon">&#9632;</span> Dashboard
+    <div class="nav-group-label">Overview</div>
+    <a class="nav-link active" data-section="summary">
+      <span class="nav-icon">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+      </span>
+      <span>Dashboard</span>
     </a>
-    <a href="#income"        class="nav-link" data-section="income">
-      <span class="nav-icon">&#9650;</span> Income
+    <div class="nav-group-label">Analysis</div>
+    <a class="nav-link" data-section="income">
+      <span class="nav-icon">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+      </span>
+      <span>Income</span>
     </a>
-    <a href="#taxrates"      class="nav-link" data-section="taxrates">
-      <span class="nav-icon">&#9670;</span> Tax Rates
+    <a class="nav-link" data-section="taxrates">
+      <span class="nav-icon">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"/></svg>
+      </span>
+      <span>Tax Rates</span>
     </a>
-    <a href="#deductions"    class="nav-link" data-section="deductions">
-      <span class="nav-icon">&#9711;</span> Deductions
+    <a class="nav-link" data-section="deductions">
+      <span class="nav-icon">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"/></svg>
+      </span>
+      <span>Deductions</span>
     </a>
-    <a href="#refunds"       class="nav-link" data-section="refunds">
-      <span class="nav-icon">&#8635;</span> Refunds
+    <a class="nav-link" data-section="refunds">
+      <span class="nav-icon">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"/></svg>
+      </span>
+      <span>Refunds</span>
     </a>
-    <a href="#state"         class="nav-link" data-section="state">
-      <span class="nav-icon">&#9741;</span> By State
+    <a class="nav-link" data-section="state">
+      <span class="nav-icon">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"/></svg>
+      </span>
+      <span>By State</span>
     </a>
-    <a href="#capgains"      class="nav-link" data-section="capgains">
-      <span class="nav-icon">&#9651;</span> Capital Gains
+    <a class="nav-link" data-section="capgains">
+      <span class="nav-icon">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.028 2.353 1.118V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.028-2.354-1.118V5z"/></svg>
+      </span>
+      <span>Capital Gains</span>
     </a>
-    <a href="#credits"       class="nav-link" data-section="credits">
-      <span class="nav-icon">&#9733;</span> Credits
+    <a class="nav-link" data-section="credits">
+      <span class="nav-icon">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+      </span>
+      <span>Credits</span>
     </a>
-    <a href="#fica"          class="nav-link" data-section="fica">
-      <span class="nav-icon">&#9654;</span> FICA
+    <a class="nav-link" data-section="fica">
+      <span class="nav-icon">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"/></svg>
+      </span>
+      <span>FICA</span>
     </a>
-    <a href="#records"       class="nav-link" data-section="records">
-      <span class="nav-icon">&#9776;</span> Records
+    <div class="nav-group-label">Data</div>
+    <a class="nav-link" data-section="records">
+      <span class="nav-icon">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z"/></svg>
+      </span>
+      <span>Records</span>
     </a>
   </nav>
+
   <div class="sidebar-footer">
-    <button class="btn-regen" id="btnRegen">&#8635; Regenerate Data</button>
+    <button class="btn-regen" id="btnRegen">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"/></svg>
+      Regenerate Data
+    </button>
   </div>
 </aside>
 
-<!-- ===== MAIN ===== -->
+<!-- ── MAIN ── -->
 <main class="main">
 
-  <!-- TOP BAR -->
+  <!-- TOPBAR -->
   <header class="topbar">
     <div class="topbar-left">
-      <h1 class="page-title" id="pageTitle">Dashboard</h1>
-      <span class="badge">Tax Year 2024</span>
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle sidebar">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/></svg>
+      </button>
+      <div>
+        <h1 class="page-title" id="pageTitle">Dashboard</h1>
+      </div>
     </div>
     <div class="topbar-right">
-      <div class="upload-wrap">
-        <label class="btn-upload" for="csvUpload">&#8679; Upload CSV</label>
-        <input type="file" id="csvUpload" accept=".csv" hidden />
+      <span class="tax-year-badge">Tax Year 2024</span>
+      <label class="btn-upload" for="csvUpload">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"/></svg>
+        Upload CSV
+      </label>
+      <input type="file" id="csvUpload" accept=".csv" hidden />
+      <div class="status-pill" id="statusPill">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">Loading…</span>
       </div>
-      <span class="status-dot" id="statusDot"></span>
-      <span class="status-text" id="statusText">Loading…</span>
     </div>
   </header>
 
-  <!-- ===== SECTION: SUMMARY ===== -->
+  <!-- ── SECTION: SUMMARY ── -->
   <section class="section active" id="section-summary">
+    <div class="section-hero">
+      <div class="hero-copy">
+        <h2 class="hero-title">Tax Intelligence<br><span class="gradient-text">At a Glance</span></h2>
+        <p class="hero-sub">Real-time analytics across 500 tax records · 2024 US Federal &amp; State</p>
+      </div>
+      <div class="hero-stats" id="heroStats"></div>
+    </div>
     <div class="kpi-grid" id="kpiGrid"></div>
-
     <div class="charts-row">
-      <div class="chart-card">
-        <h3>Income by Source</h3>
+      <div class="glass-card">
+        <div class="card-header"><h3>Income by Source</h3></div>
         <canvas id="chartIncomeSource"></canvas>
       </div>
-      <div class="chart-card">
-        <h3>Filing Status Mix</h3>
+      <div class="glass-card">
+        <div class="card-header"><h3>Filing Status Mix</h3></div>
         <canvas id="chartFilingStatus"></canvas>
       </div>
-      <div class="chart-card">
-        <h3>Tax Breakdown</h3>
+      <div class="glass-card">
+        <div class="card-header"><h3>Tax Breakdown</h3></div>
         <canvas id="chartTaxBreakdown"></canvas>
       </div>
     </div>
   </section>
 
-  <!-- ===== SECTION: INCOME ===== -->
+  <!-- ── SECTION: INCOME ── -->
   <section class="section" id="section-income">
     <div class="charts-row">
-      <div class="chart-card wide">
-        <h3>Income Bracket Distribution</h3>
+      <div class="glass-card wide">
+        <div class="card-header"><h3>Income Bracket Distribution</h3><span class="card-badge">500 filers</span></div>
         <canvas id="chartIncomeBrackets"></canvas>
       </div>
     </div>
-    <div class="stat-table-wrap">
-      <h3>Overall Income Statistics</h3>
-      <table class="stat-table" id="tblIncomeStats"></table>
-    </div>
-    <div class="stat-table-wrap">
-      <h3>Income by Source</h3>
-      <table class="stat-table" id="tblIncomeSource"></table>
+    <div class="tables-row">
+      <div class="glass-card">
+        <div class="card-header"><h3>Overall Statistics</h3></div>
+        <table class="data-table" id="tblIncomeStats"></table>
+      </div>
+      <div class="glass-card wide">
+        <div class="card-header"><h3>By Income Source</h3></div>
+        <table class="data-table" id="tblIncomeSource"></table>
+      </div>
     </div>
   </section>
 
-  <!-- ===== SECTION: TAX RATES ===== -->
+  <!-- ── SECTION: TAX RATES ── -->
   <section class="section" id="section-taxrates">
     <div class="charts-row">
-      <div class="chart-card">
-        <h3>Marginal Rate Distribution</h3>
+      <div class="glass-card">
+        <div class="card-header"><h3>Marginal Rate Distribution</h3></div>
         <canvas id="chartMarginal"></canvas>
       </div>
-      <div class="chart-card">
-        <h3>Avg Effective Rate by Filing Status</h3>
+      <div class="glass-card">
+        <div class="card-header"><h3>Effective Rate by Filing Status</h3></div>
         <canvas id="chartEffectiveByStatus"></canvas>
       </div>
     </div>
-    <div class="stat-table-wrap">
-      <h3>Effective Tax Rate Statistics</h3>
-      <table class="stat-table" id="tblEffectiveStats"></table>
-    </div>
-    <div class="stat-table-wrap">
-      <h3>By Filing Status</h3>
-      <table class="stat-table" id="tblFilingStats"></table>
+    <div class="tables-row">
+      <div class="glass-card">
+        <div class="card-header"><h3>Effective Rate Stats</h3></div>
+        <table class="data-table" id="tblEffectiveStats"></table>
+      </div>
+      <div class="glass-card">
+        <div class="card-header"><h3>By Filing Status</h3></div>
+        <table class="data-table" id="tblFilingStats"></table>
+      </div>
     </div>
   </section>
 
-  <!-- ===== SECTION: DEDUCTIONS ===== -->
+  <!-- ── SECTION: DEDUCTIONS ── -->
   <section class="section" id="section-deductions">
     <div class="kpi-grid" id="kpiDeductions"></div>
     <div class="charts-row">
-      <div class="chart-card">
-        <h3>Itemized vs Standard Filers</h3>
+      <div class="glass-card">
+        <div class="card-header"><h3>Itemized vs Standard</h3></div>
         <canvas id="chartItemizedVsStd"></canvas>
       </div>
-      <div class="chart-card wide">
-        <h3>Avg Itemized Category Amounts</h3>
+      <div class="glass-card wide">
+        <div class="card-header"><h3>Avg Itemized Category Amounts</h3></div>
         <canvas id="chartItemizedCats"></canvas>
       </div>
     </div>
   </section>
 
-  <!-- ===== SECTION: REFUNDS ===== -->
+  <!-- ── SECTION: REFUNDS ── -->
   <section class="section" id="section-refunds">
     <div class="kpi-grid" id="kpiRefunds"></div>
     <div class="charts-row">
-      <div class="chart-card wide">
-        <h3>Refund / Owed Bucket Distribution</h3>
+      <div class="glass-card wide">
+        <div class="card-header"><h3>Refund / Owed Buckets</h3></div>
         <canvas id="chartRefundBuckets"></canvas>
       </div>
-      <div class="chart-card">
-        <h3>Refund vs Owed Count</h3>
+      <div class="glass-card">
+        <div class="card-header"><h3>Refund vs Owed Split</h3></div>
         <canvas id="chartRefundOwed"></canvas>
       </div>
     </div>
   </section>
 
-  <!-- ===== SECTION: STATE ===== -->
+  <!-- ── SECTION: STATE ── -->
   <section class="section" id="section-state">
     <div class="charts-row">
-      <div class="chart-card wide">
-        <h3>Average Total Tax by State</h3>
+      <div class="glass-card wide">
+        <div class="card-header"><h3>Average Tax by State</h3><span class="card-badge">Stacked</span></div>
         <canvas id="chartStateTax"></canvas>
       </div>
-      <div class="chart-card">
-        <h3>Effective Rate by State</h3>
+      <div class="glass-card">
+        <div class="card-header"><h3>Effective Rate Radar</h3></div>
         <canvas id="chartStateRate"></canvas>
       </div>
     </div>
-    <div class="stat-table-wrap">
-      <h3>State Comparison Table</h3>
-      <table class="stat-table" id="tblState"></table>
+    <div class="glass-card">
+      <div class="card-header"><h3>State Comparison</h3></div>
+      <div class="table-scroll">
+        <table class="data-table data-table--full" id="tblState"></table>
+      </div>
     </div>
   </section>
 
-  <!-- ===== SECTION: CAPITAL GAINS ===== -->
+  <!-- ── SECTION: CAPITAL GAINS ── -->
   <section class="section" id="section-capgains">
     <div class="kpi-grid" id="kpiCapGains"></div>
     <div class="charts-row">
-      <div class="chart-card">
-        <h3>Capital Gains Statistics</h3>
+      <div class="glass-card">
+        <div class="card-header"><h3>Capital Gains Stats</h3></div>
         <canvas id="chartCGStats"></canvas>
       </div>
-      <div class="chart-card">
-        <h3>Dividend Income Statistics</h3>
+      <div class="glass-card">
+        <div class="card-header"><h3>Dividend Income Stats</h3></div>
         <canvas id="chartDivStats"></canvas>
       </div>
     </div>
   </section>
 
-  <!-- ===== SECTION: CREDITS ===== -->
+  <!-- ── SECTION: CREDITS ── -->
   <section class="section" id="section-credits">
     <div class="kpi-grid" id="kpiCredits"></div>
     <div class="charts-row">
-      <div class="chart-card">
-        <h3>Dependent Distribution</h3>
+      <div class="glass-card">
+        <div class="card-header"><h3>Dependent Distribution</h3></div>
         <canvas id="chartDependents"></canvas>
       </div>
-      <div class="chart-card wide">
-        <h3>Avg Tax Liability by Number of Dependents</h3>
+      <div class="glass-card wide">
+        <div class="card-header"><h3>Avg Tax by Dependents</h3></div>
         <canvas id="chartTaxByDeps"></canvas>
       </div>
     </div>
   </section>
 
-  <!-- ===== SECTION: FICA ===== -->
+  <!-- ── SECTION: FICA ── -->
   <section class="section" id="section-fica">
     <div class="kpi-grid" id="kpiFica"></div>
     <div class="charts-row">
-      <div class="chart-card wide">
-        <h3>Social Security vs Medicare Breakdown</h3>
+      <div class="glass-card wide">
+        <div class="card-header"><h3>Social Security vs Medicare</h3></div>
         <canvas id="chartFICA"></canvas>
       </div>
     </div>
   </section>
 
-  <!-- ===== SECTION: RECORDS ===== -->
+  <!-- ── SECTION: RECORDS ── -->
   <section class="section" id="section-records">
-    <div class="records-controls">
-      <span id="recordsTotal"></span>
-      <div class="pagination">
-        <button id="btnPrev" class="btn-page">&#8592; Prev</button>
-        <span id="pageInfo"></span>
-        <button id="btnNext" class="btn-page">Next &#8594;</button>
+    <div class="glass-card">
+      <div class="card-header">
+        <h3>Raw Tax Records</h3>
+        <div class="records-controls">
+          <span class="rec-total" id="recordsTotal"></span>
+          <div class="pagination">
+            <button id="btnPrev" class="btn-page">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"/></svg>
+            </button>
+            <span id="pageInfo" class="page-info"></span>
+            <button id="btnNext" class="btn-page">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="records-table-wrap">
-      <table class="records-table" id="tblRecords">
-        <thead id="tblRecordsHead"></thead>
-        <tbody id="tblRecordsBody"></tbody>
-      </table>
+      <div class="table-scroll">
+        <table class="records-table">
+          <thead id="tblRecordsHead"></thead>
+          <tbody id="tblRecordsBody"></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
 </main>
 
-<!-- ===== TOAST ===== -->
-<div class="toast" id="toast"></div>
+<!-- ── TOAST ── -->
+<div class="toast-container" id="toastContainer"></div>
 
 <script src="/static/app.js"></script>
 </body>

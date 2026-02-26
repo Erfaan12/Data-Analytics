@@ -1,150 +1,210 @@
-/* ============================================================
-   Tax Data Analyzer – Frontend Application
-   ============================================================ */
-
+/* ================================================================
+   TaxLens – Frontend Application
+   Glassmorphism Aurora Design
+   ================================================================ */
 'use strict';
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-const API = '';          // same-origin; empty prefix = relative URLs
 const PAGE_SIZE = 50;
 
-// ---------------------------------------------------------------------------
-// Chart palette
-// ---------------------------------------------------------------------------
-const PALETTE = [
-  '#4f8ef7','#38c98b','#f7934f','#f75f5f','#a78bfa',
-  '#34d399','#fbbf24','#fb7185','#60a5fa','#f472b6',
-];
-const CHART_DEFAULTS = {
-  plugins: { legend: { labels: { color: '#8891aa', font: { size: 12 } } } },
-  scales: {
-    x: { ticks: { color: '#8891aa' }, grid: { color: '#2e3347' } },
-    y: { ticks: { color: '#8891aa' }, grid: { color: '#2e3347' } },
-  },
+/* ── Aurora colour palette ── */
+const C = {
+  indigo:  '#818cf8',
+  cyan:    '#22d3ee',
+  emerald: '#34d399',
+  rose:    '#fb7185',
+  amber:   '#fbbf24',
+  violet:  '#a78bfa',
+  pink:    '#f472b6',
+  sky:     '#38bdf8',
+  lime:    '#a3e635',
 };
+const PALETTE = [C.indigo, C.cyan, C.emerald, C.rose, C.amber, C.violet, C.pink, C.sky, C.lime];
 
-// ---------------------------------------------------------------------------
-// Utility helpers
-// ---------------------------------------------------------------------------
-const usd   = v => '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const pct   = v => Number(v).toFixed(2) + '%';
-const num   = v => Number(v).toLocaleString('en-US');
-const cap   = s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ');
+/* ── Chart.js global defaults ── */
+Chart.defaults.color          = '#8892b0';
+Chart.defaults.borderColor    = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family    = "'Inter', system-ui, sans-serif";
+Chart.defaults.font.size      = 12;
+Chart.defaults.animation.duration = 700;
+Chart.defaults.animation.easing   = 'easeOutQuart';
 
-function toast(msg, type = 'ok') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className   = `toast show ${type}`;
-  setTimeout(() => el.classList.remove('show'), 3500);
+/* Shared scale config */
+const SCALES = {
+  x: { ticks:{ color:'#8892b0', maxRotation:30 }, grid:{ color:'rgba(255,255,255,0.04)' } },
+  y: { ticks:{ color:'#8892b0' },                  grid:{ color:'rgba(255,255,255,0.04)' } },
+};
+const LEGEND = { labels:{ color:'#8892b0', usePointStyle:true, pointStyleWidth:8, padding:16 } };
+
+/* Create a gradient fill for a canvas */
+function grad(ctx, top, bottom, alpha = 0.35) {
+  if (!ctx) return top;
+  const g = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
+  g.addColorStop(0, top.replace(')', `,${alpha})`).replace('rgb','rgba'));
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  return g;
 }
 
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgb(${r},${g},${b})`;
+}
+
+function gradFill(id, color, alpha = 0.28) {
+  const el = document.getElementById(id);
+  if (!el) return color;
+  const ctx = el.getContext('2d');
+  const g   = ctx.createLinearGradient(0, 0, 0, 280);
+  const [r,g2,b] = color.match(/\w\w/g).map(x=>parseInt(x,16));
+  g.addColorStop(0, `rgba(${r},${g2},${b},${alpha})`);
+  g.addColorStop(1, `rgba(${r},${g2},${b},0)`);
+  return g;
+}
+
+/* ── Chart registry ── */
+const _charts = {};
+function mkChart(id, config) {
+  if (_charts[id]) _charts[id].destroy();
+  const el = document.getElementById(id);
+  if (!el) return;
+  _charts[id] = new Chart(el, config);
+}
+
+/* ── Formatters ── */
+const usd = v => '$' + Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct = v => Number(v).toFixed(2) + '%';
+const num = v => Number(v).toLocaleString('en-US');
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g,' ');
+
+/* ── Loading bar ── */
+function setLoader(pct, label) {
+  const fill = document.getElementById('loaderFill');
+  const lbl  = document.getElementById('loaderLabel');
+  if (fill) fill.style.width = pct + '%';
+  if (lbl)  lbl.textContent = label;
+}
+function hideLoader() {
+  const el = document.getElementById('loaderScreen');
+  if (el) el.classList.add('done');
+}
+
+/* ── Status ── */
 function setStatus(ok, msg) {
   const dot  = document.getElementById('statusDot');
   const text = document.getElementById('statusText');
-  dot.className  = `status-dot ${ok ? 'ok' : 'error'}`;
-  text.textContent = msg;
+  if (dot)  dot.className  = `status-dot ${ok ? 'ok' : 'error'}`;
+  if (text) text.textContent = msg;
 }
 
-function kpiCard(label, value, sub = '', variant = '') {
-  return `<div class="kpi-card ${variant}">
+/* ── Toast ── */
+function toast(msg, type='ok') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="toast-icon">${type==='ok' ? '✦' : '✕'}</span> ${msg}`;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('out');
+    el.addEventListener('animationend', () => el.remove());
+  }, 3500);
+}
+
+/* ── KPI card builder ── */
+function kpiCard(label, value, sub='', variant='') {
+  return `<div class="kpi-card ${variant?'v-'+variant:''}">
     <div class="kpi-label">${label}</div>
     <div class="kpi-value">${value}</div>
     ${sub ? `<div class="kpi-sub">${sub}</div>` : ''}
   </div>`;
 }
 
-function statsRows(stats, formatFn) {
-  return Object.entries(stats).map(([k, v]) => {
-    const val = k === 'count' ? num(v) : formatFn(v);
-    return `<tr><td>${cap(k)}</td><td class="num">${val}</td></tr>`;
-  }).join('');
+/* ── Stats table rows ── */
+function statsRows(stats, fmt) {
+  return Object.entries(stats).map(([k,v]) =>
+    `<tr><td>${cap(k)}</td><td class="num">${k==='count'?num(v):fmt(v)}</td></tr>`
+  ).join('');
 }
 
-// Destroy + recreate a chart instance
-const _chartInstances = {};
-function mkChart(id, config) {
-  if (_chartInstances[id]) _chartInstances[id].destroy();
-  const ctx = document.getElementById(id);
-  if (!ctx) return;
-  _chartInstances[id] = new Chart(ctx, config);
-}
-
-// ---------------------------------------------------------------------------
-// Data fetching
-// ---------------------------------------------------------------------------
+/* ── API fetch ── */
 async function apiFetch(path) {
-  const res = await fetch(API + path);
-  if (!res.ok) throw new Error(`API error ${res.status}: ${path}`);
+  const res = await fetch(path);
+  if (!res.ok) throw new Error(`${res.status} ${path}`);
   return res.json();
 }
 
-// ---------------------------------------------------------------------------
-// Section renderers
-// ---------------------------------------------------------------------------
+/* ================================================================
+   SECTION RENDERERS
+   ================================================================ */
 
-// ---- SUMMARY ---------------------------------------------------------------
+/* ── SUMMARY ── */
 async function renderSummary(full) {
-  const s = full.summary;
+  const s  = full.summary;
   const tr = full.tax_rates;
-  const by = tr.by_filing_status;
+  const fs = tr.by_filing_status;
 
-  document.getElementById('kpiGrid').innerHTML = [
-    kpiCard('Total Taxpayers',      num(s.total_taxpayers),          '', 'accent'),
-    kpiCard('Total Income',          usd(s.total_income_reported),   `Avg ${usd(s.avg_income)}`, ''),
-    kpiCard('Federal Tax Collected', usd(s.total_federal_tax),       '', 'orange'),
-    kpiCard('State Tax Collected',   usd(s.total_state_tax),         '', 'orange'),
-    kpiCard('FICA Collected',        usd(s.total_fica),              '', 'orange'),
-    kpiCard('Total Tax Collected',   usd(s.total_tax_collected),     `Avg ${usd(s.avg_total_tax)}`, 'red'),
-    kpiCard('Overall Effective Rate',pct(s.overall_effective_rate),  '', 'accent'),
-    kpiCard('Total Refunds Issued',  usd(s.total_refunds_issued),    '', 'green'),
-    kpiCard('Total Tax Owed',        usd(s.total_tax_owed),          '', 'red'),
+  /* Hero stats */
+  document.getElementById('heroStats').innerHTML = [
+    `<div class="hero-stat"><div class="hero-stat-val">${num(s.total_taxpayers)}</div><div class="hero-stat-label">Filers</div></div>`,
+    `<div class="hero-stat"><div class="hero-stat-val">${pct(s.overall_effective_rate)}</div><div class="hero-stat-label">Eff. Rate</div></div>`,
+    `<div class="hero-stat"><div class="hero-stat-val">${usd(s.avg_total_tax).replace('.00','')}</div><div class="hero-stat-label">Avg Tax</div></div>`,
   ].join('');
 
-  // Income by source
+  /* KPI grid */
+  document.getElementById('kpiGrid').innerHTML = [
+    kpiCard('Total Taxpayers',       num(s.total_taxpayers),         '',               'indigo'),
+    kpiCard('Total Income Reported', usd(s.total_income_reported),   `Avg ${usd(s.avg_income)}`, ''),
+    kpiCard('Federal Tax Collected', usd(s.total_federal_tax),       '',               'warm'),
+    kpiCard('State Tax Collected',   usd(s.total_state_tax),         '',               'warm'),
+    kpiCard('FICA Collected',        usd(s.total_fica),              '',               'warm'),
+    kpiCard('Total Tax Collected',   usd(s.total_tax_collected),     `Avg ${usd(s.avg_total_tax)}`, 'rose'),
+    kpiCard('Overall Effective Rate',pct(s.overall_effective_rate),  '',               'indigo'),
+    kpiCard('Total Refunds Issued',  usd(s.total_refunds_issued),    '',               'green'),
+    kpiCard('Total Tax Owed',        usd(s.total_tax_owed),          '',               'rose'),
+  ].join('');
+
+  /* Income by source – gradient bars */
   const srcData = full.income.by_income_source;
   mkChart('chartIncomeSource', {
     type: 'bar',
     data: {
       labels: Object.keys(srcData).map(cap),
       datasets: [{
-        label: 'Avg Income',
-        data: Object.values(srcData).map(d => d.mean),
+        data: Object.values(srcData).map(d=>d.mean),
         backgroundColor: PALETTE,
-        borderRadius: 6,
+        borderRadius: 7,
+        borderSkipped: false,
       }],
     },
-    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } } },
+    options: {
+      plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: c=>' '+usd(c.raw) } } },
+      scales: SCALES,
+    },
   });
 
-  // Filing status pie
-  const fs = tr.by_filing_status;
+  /* Filing status – donut */
   mkChart('chartFilingStatus', {
     type: 'doughnut',
     data: {
       labels: Object.keys(fs).map(cap),
-      datasets: [{ data: Object.values(fs).map(d => d.count), backgroundColor: PALETTE, borderWidth: 0 }],
+      datasets: [{ data: Object.values(fs).map(d=>d.count), backgroundColor:[C.indigo,C.cyan,C.violet], borderWidth:0, hoverOffset:8 }],
     },
-    options: { plugins: { legend: { labels: { color: '#8891aa' } } } },
+    options: { plugins:{ legend:LEGEND }, cutout:'68%' },
   });
 
-  // Tax breakdown doughnut
+  /* Tax breakdown – donut */
   mkChart('chartTaxBreakdown', {
     type: 'doughnut',
     data: {
-      labels: ['Federal Tax', 'State Tax', 'FICA'],
-      datasets: [{
-        data: [s.total_federal_tax, s.total_state_tax, s.total_fica],
-        backgroundColor: [PALETTE[0], PALETTE[1], PALETTE[2]],
-        borderWidth: 0,
-      }],
+      labels: ['Federal Tax','State Tax','FICA'],
+      datasets: [{ data:[s.total_federal_tax,s.total_state_tax,s.total_fica], backgroundColor:[C.indigo,C.emerald,C.amber], borderWidth:0, hoverOffset:8 }],
     },
-    options: { plugins: { legend: { labels: { color: '#8891aa' } } } },
+    options: { plugins:{ legend:LEGEND }, cutout:'68%' },
   });
 }
 
-// ---- INCOME ----------------------------------------------------------------
+/* ── INCOME ── */
 async function renderIncome(full) {
   const inc = full.income;
   const bd  = inc.bracket_distribution;
@@ -153,42 +213,51 @@ async function renderIncome(full) {
     type: 'bar',
     data: {
       labels: Object.keys(bd),
-      datasets: [
-        { label: 'Taxpayers', data: Object.values(bd).map(d => d.count), backgroundColor: PALETTE[0], borderRadius: 6 },
-      ],
+      datasets: [{
+        label: 'Taxpayers',
+        data: Object.values(bd).map(d=>d.count),
+        backgroundColor: Object.keys(bd).map((_,i)=>PALETTE[i%PALETTE.length]),
+        borderRadius: 8,
+        borderSkipped: false,
+      }],
     },
-    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } } },
+    options: {
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>`${c.raw} filers (${bd[Object.keys(bd)[c.dataIndex]].percent}%)` } } },
+      scales: SCALES,
+    },
   });
 
-  // Overall stats table
   document.getElementById('tblIncomeStats').innerHTML =
     `<thead><tr><th>Metric</th><th class="num">Value</th></tr></thead>
      <tbody>${statsRows(inc.overall_stats, usd)}</tbody>`;
 
-  // By source table
-  const srcRows = Object.entries(inc.by_income_source).map(([src, s]) =>
-    `<tr><td>${cap(src)}</td><td class="num">${usd(s.mean)}</td><td class="num">${usd(s.median)}</td>
-     <td class="num">${usd(s.min)}</td><td class="num">${usd(s.max)}</td><td class="num">${num(s.count)}</td></tr>`
+  const rows = Object.entries(inc.by_income_source).map(([src,s])=>
+    `<tr><td>${cap(src)}</td><td class="num">${usd(s.mean)}</td><td class="num">${usd(s.median)}</td><td class="num">${usd(s.min)}</td><td class="num">${usd(s.max)}</td><td class="num">${num(s.count)}</td></tr>`
   ).join('');
   document.getElementById('tblIncomeSource').innerHTML =
-    `<thead><tr><th>Source</th><th class="num">Mean</th><th class="num">Median</th>
-     <th class="num">Min</th><th class="num">Max</th><th class="num">Count</th></tr></thead>
-     <tbody>${srcRows}</tbody>`;
+    `<thead><tr><th>Source</th><th class="num">Mean</th><th class="num">Median</th><th class="num">Min</th><th class="num">Max</th><th class="num">Count</th></tr></thead>
+     <tbody>${rows}</tbody>`;
 }
 
-// ---- TAX RATES -------------------------------------------------------------
+/* ── TAX RATES ── */
 async function renderTaxRates(full) {
-  const tr  = full.tax_rates;
-  const md  = tr.marginal_distribution;
-  const fs  = tr.by_filing_status;
+  const tr = full.tax_rates;
+  const md = tr.marginal_distribution;
+  const fs = tr.by_filing_status;
 
   mkChart('chartMarginal', {
     type: 'bar',
     data: {
       labels: Object.keys(md),
-      datasets: [{ label: 'Taxpayers', data: Object.values(md), backgroundColor: PALETTE[3], borderRadius: 6 }],
+      datasets: [{
+        label: 'Filers',
+        data: Object.values(md),
+        backgroundColor: [C.emerald,C.cyan,C.indigo,C.violet,C.amber,C.rose],
+        borderRadius: 7,
+        borderSkipped: false,
+      }],
     },
-    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } } },
+    options: { plugins:{ legend:{display:false} }, scales:SCALES },
   });
 
   mkChart('chartEffectiveByStatus', {
@@ -197,47 +266,45 @@ async function renderTaxRates(full) {
       labels: Object.keys(fs).map(cap),
       datasets: [{
         label: 'Avg Effective Rate (%)',
-        data: Object.values(fs).map(d => d.avg_effective),
-        backgroundColor: [PALETTE[0], PALETTE[1], PALETTE[2]],
-        borderRadius: 6,
+        data: Object.values(fs).map(d=>d.avg_effective),
+        backgroundColor: [C.indigo,C.cyan,C.violet],
+        borderRadius: 7,
+        borderSkipped: false,
       }],
     },
-    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } } },
+    options: { plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>pct(c.raw) } } }, scales:SCALES },
   });
 
   document.getElementById('tblEffectiveStats').innerHTML =
     `<thead><tr><th>Metric</th><th class="num">Value</th></tr></thead>
      <tbody>${statsRows(tr.effective_rate_stats, pct)}</tbody>`;
 
-  const fsRows = Object.entries(fs).map(([status, d]) =>
-    `<tr><td>${cap(status)}</td><td class="num">${num(d.count)}</td>
-     <td class="num">${pct(d.avg_effective)}</td><td class="num">${usd(d.avg_federal_tax)}</td></tr>`
+  const rows = Object.entries(fs).map(([st,d])=>
+    `<tr><td>${cap(st)}</td><td class="num">${num(d.count)}</td><td class="num">${pct(d.avg_effective)}</td><td class="num">${usd(d.avg_federal_tax)}</td></tr>`
   ).join('');
   document.getElementById('tblFilingStats').innerHTML =
-    `<thead><tr><th>Filing Status</th><th class="num">Count</th>
-     <th class="num">Avg Effective Rate</th><th class="num">Avg Federal Tax</th></tr></thead>
-     <tbody>${fsRows}</tbody>`;
+    `<thead><tr><th>Filing Status</th><th class="num">Count</th><th class="num">Avg Effective Rate</th><th class="num">Avg Federal Tax</th></tr></thead>
+     <tbody>${rows}</tbody>`;
 }
 
-// ---- DEDUCTIONS ------------------------------------------------------------
+/* ── DEDUCTIONS ── */
 async function renderDeductions(full) {
   const d = full.deductions;
-
   document.getElementById('kpiDeductions').innerHTML = [
-    kpiCard('Itemizers',             num(d.itemizer_count),              `${d.itemizer_pct}% of filers`, 'accent'),
-    kpiCard('Standard Filers',       num(d.standard_filer_count),        `${(100-d.itemizer_pct).toFixed(1)}% of filers`, ''),
-    kpiCard('Avg Itemized Total',    usd(d.avg_itemized_total),          '', 'orange'),
-    kpiCard('Avg Standard Deduction',usd(d.avg_standard_deduction),      '', ''),
-    kpiCard('Avg Tax Saved (Itemize)',usd(d.avg_tax_savings_itemize),    'vs. standard deduction', 'green'),
+    kpiCard('Itemizers',              num(d.itemizer_count),        `${d.itemizer_pct}% of filers`,            'indigo'),
+    kpiCard('Standard Filers',        num(d.standard_filer_count),  `${(100-d.itemizer_pct).toFixed(1)}% of filers`, ''),
+    kpiCard('Avg Itemized Total',     usd(d.avg_itemized_total),    '',                                        'warm'),
+    kpiCard('Avg Standard Deduction', usd(d.avg_standard_deduction),'',                                        ''),
+    kpiCard('Avg Tax Saved',          usd(d.avg_tax_savings_itemize),'itemized vs standard',                   'green'),
   ].join('');
 
   mkChart('chartItemizedVsStd', {
     type: 'doughnut',
     data: {
-      labels: ['Itemized', 'Standard'],
-      datasets: [{ data: [d.itemizer_count, d.standard_filer_count], backgroundColor: [PALETTE[0], PALETTE[4]], borderWidth: 0 }],
+      labels: ['Itemized','Standard'],
+      datasets: [{ data:[d.itemizer_count, d.standard_filer_count], backgroundColor:[C.indigo,C.violet], borderWidth:0, hoverOffset:8 }],
     },
-    options: { plugins: { legend: { labels: { color: '#8891aa' } } } },
+    options: { plugins:{ legend:LEGEND }, cutout:'65%' },
   });
 
   const cats = d.category_breakdown;
@@ -245,23 +312,28 @@ async function renderDeductions(full) {
     type: 'bar',
     data: {
       labels: Object.keys(cats).map(cap),
-      datasets: [{ label: 'Avg Amount', data: Object.values(cats).map(c => c.mean || 0), backgroundColor: PALETTE, borderRadius: 6 }],
+      datasets: [{
+        label: 'Avg Amount',
+        data: Object.values(cats).map(c=>c.mean||0),
+        backgroundColor: [C.indigo,C.cyan,C.emerald,C.amber],
+        borderRadius: 7,
+        borderSkipped: false,
+      }],
     },
-    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } } },
+    options: { plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>' '+usd(c.raw) } } }, scales:SCALES },
   });
 }
 
-// ---- REFUNDS ---------------------------------------------------------------
+/* ── REFUNDS ── */
 async function renderRefunds(full) {
   const r = full.refunds;
-
   document.getElementById('kpiRefunds').innerHTML = [
-    kpiCard('Receiving Refund',  num(r.refund_count),   `${r.over_withheld_pct}% of filers`, 'green'),
-    kpiCard('Owe Taxes',         num(r.owed_count),     `${(100-r.over_withheld_pct).toFixed(1)}% of filers`, 'red'),
-    kpiCard('Avg Refund',        usd(r.refund_stats.mean || 0), '', 'green'),
-    kpiCard('Avg Amount Owed',   usd(r.owed_stats.mean  || 0),  '', 'red'),
-    kpiCard('Largest Refund',    usd(r.refund_stats.max || 0),  '', 'accent'),
-    kpiCard('Largest Owed',      usd(r.owed_stats.max   || 0),  '', 'orange'),
+    kpiCard('Receiving Refund', num(r.refund_count),              `${r.over_withheld_pct}% of filers`,               'green'),
+    kpiCard('Owe Taxes',        num(r.owed_count),               `${(100-r.over_withheld_pct).toFixed(1)}% of filers`,'rose'),
+    kpiCard('Avg Refund',       usd(r.refund_stats.mean  || 0),  '',                                                  'green'),
+    kpiCard('Avg Amount Owed',  usd(r.owed_stats.mean   || 0),   '',                                                  'rose'),
+    kpiCard('Largest Refund',   usd(r.refund_stats.max  || 0),   '',                                                  'indigo'),
+    kpiCard('Largest Owed',     usd(r.owed_stats.max    || 0),   '',                                                  'warm'),
   ].join('');
 
   const bd = r.bucket_distribution;
@@ -269,24 +341,30 @@ async function renderRefunds(full) {
     type: 'bar',
     data: {
       labels: Object.keys(bd),
-      datasets: [{ label: 'Count', data: Object.values(bd), backgroundColor: Object.keys(bd).map((k,i) => PALETTE[i % PALETTE.length]), borderRadius: 6 }],
+      datasets: [{
+        label: 'Filers',
+        data: Object.values(bd),
+        backgroundColor: Object.keys(bd).map((_,i)=>PALETTE[i%PALETTE.length]),
+        borderRadius: 6,
+        borderSkipped: false,
+      }],
     },
-    options: { ...CHART_DEFAULTS, indexAxis: 'y', plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } } },
+    options: { indexAxis:'y', plugins:{ legend:{display:false} }, scales:SCALES },
   });
 
   mkChart('chartRefundOwed', {
     type: 'doughnut',
     data: {
-      labels: ['Getting Refund', 'Owe Taxes'],
-      datasets: [{ data: [r.refund_count, r.owed_count], backgroundColor: [PALETTE[1], PALETTE[3]], borderWidth: 0 }],
+      labels: ['Refund','Owe'],
+      datasets: [{ data:[r.refund_count, r.owed_count], backgroundColor:[C.emerald, C.rose], borderWidth:0, hoverOffset:8 }],
     },
-    options: { plugins: { legend: { labels: { color: '#8891aa' } } } },
+    options: { plugins:{ legend:LEGEND }, cutout:'65%' },
   });
 }
 
-// ---- STATE -----------------------------------------------------------------
+/* ── STATE ── */
 async function renderState(full) {
-  const st = full.by_state;
+  const st     = full.by_state;
   const states = Object.keys(st);
 
   mkChart('chartStateTax', {
@@ -294,12 +372,15 @@ async function renderState(full) {
     data: {
       labels: states,
       datasets: [
-        { label: 'Avg Federal Tax', data: states.map(s => st[s].avg_federal_tax), backgroundColor: PALETTE[0], borderRadius: 4 },
-        { label: 'Avg State Tax',   data: states.map(s => st[s].avg_state_tax),   backgroundColor: PALETTE[1], borderRadius: 4 },
-        { label: 'Avg FICA',        data: states.map(s => st[s].avg_total_tax - st[s].avg_federal_tax - st[s].avg_state_tax), backgroundColor: PALETTE[2], borderRadius: 4 },
+        { label:'Federal', data:states.map(s=>st[s].avg_federal_tax), backgroundColor:C.indigo, borderRadius:4, borderSkipped:false, stack:'tax' },
+        { label:'State',   data:states.map(s=>st[s].avg_state_tax),   backgroundColor:C.cyan,   borderRadius:4, borderSkipped:false, stack:'tax' },
+        { label:'FICA',    data:states.map(s=>st[s].avg_total_tax-st[s].avg_federal_tax-st[s].avg_state_tax), backgroundColor:C.violet, borderRadius:4, borderSkipped:false, stack:'tax' },
       ],
     },
-    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins }, scales: { ...CHART_DEFAULTS.scales, x: { ...CHART_DEFAULTS.scales.x, stacked: true }, y: { ...CHART_DEFAULTS.scales.y, stacked: true } } },
+    options: {
+      plugins:{ legend:LEGEND, tooltip:{ callbacks:{ label:c=>`${c.dataset.label}: ${usd(c.raw)}` } } },
+      scales:{ x:{...SCALES.x, stacked:true}, y:{...SCALES.y, stacked:true} },
+    },
   });
 
   mkChart('chartStateRate', {
@@ -307,284 +388,257 @@ async function renderState(full) {
     data: {
       labels: states,
       datasets: [{
-        label: 'Avg Effective Rate (%)',
-        data: states.map(s => st[s].avg_effective_rate),
-        backgroundColor: 'rgba(79,142,247,0.15)',
-        borderColor: PALETTE[0],
-        pointBackgroundColor: PALETTE[0],
+        label: 'Effective Rate (%)',
+        data: states.map(s=>st[s].avg_effective_rate),
+        backgroundColor: 'rgba(129,140,248,0.12)',
+        borderColor: C.indigo,
+        pointBackgroundColor: C.indigo,
+        pointBorderColor: 'transparent',
+        pointRadius: 4,
       }],
     },
     options: {
-      plugins: { legend: { labels: { color: '#8891aa' } } },
-      scales: { r: { ticks: { color: '#8891aa', backdropColor: 'transparent' }, grid: { color: '#2e3347' }, angleLines: { color: '#2e3347' }, pointLabels: { color: '#8891aa' } } },
+      plugins:{ legend:LEGEND },
+      scales:{ r:{ ticks:{ color:'#8892b0', backdropColor:'transparent' }, grid:{ color:'rgba(255,255,255,0.05)' }, angleLines:{ color:'rgba(255,255,255,0.05)' }, pointLabels:{ color:'#8892b0', font:{size:11} } } },
     },
   });
 
-  const stateRows = Object.entries(st).map(([state, d]) =>
-    `<tr>
-       <td><strong>${state}</strong></td>
-       <td class="num">${num(d.count)}</td>
-       <td class="num">${usd(d.avg_income)}</td>
-       <td class="num">${usd(d.avg_federal_tax)}</td>
-       <td class="num">${usd(d.avg_state_tax)}</td>
-       <td class="num">${usd(d.avg_total_tax)}</td>
-       <td class="num">${pct(d.avg_effective_rate)}</td>
-       <td class="num">${usd(d.total_state_revenue)}</td>
-     </tr>`
+  const rows = Object.entries(st).map(([s,d])=>
+    `<tr><td><strong>${s}</strong></td><td class="num">${num(d.count)}</td><td class="num">${usd(d.avg_income)}</td><td class="num">${usd(d.avg_federal_tax)}</td><td class="num">${usd(d.avg_state_tax)}</td><td class="num">${usd(d.avg_total_tax)}</td><td class="num">${pct(d.avg_effective_rate)}</td><td class="num">${usd(d.total_state_revenue)}</td></tr>`
   ).join('');
   document.getElementById('tblState').innerHTML =
-    `<thead><tr>
-       <th>State</th><th class="num">Count</th><th class="num">Avg Income</th>
-       <th class="num">Avg Federal</th><th class="num">Avg State</th>
-       <th class="num">Avg Total</th><th class="num">Eff Rate</th>
-       <th class="num">State Revenue</th>
-     </tr></thead>
-     <tbody>${stateRows}</tbody>`;
+    `<thead><tr><th>State</th><th class="num">Count</th><th class="num">Avg Income</th><th class="num">Avg Federal</th><th class="num">Avg State</th><th class="num">Avg Total</th><th class="num">Eff Rate</th><th class="num">State Revenue</th></tr></thead>
+     <tbody>${rows}</tbody>`;
 }
 
-// ---- CAPITAL GAINS ---------------------------------------------------------
+/* ── CAPITAL GAINS ── */
 async function renderCapGains(full) {
   const cg = full.capital_gains;
-
   document.getElementById('kpiCapGains').innerHTML = [
-    kpiCard('CG Filers',         num(cg.cg_filer_count),           `${cg.cg_filer_pct}% of all filers`, 'accent'),
-    kpiCard('Avg Capital Gains', usd(cg.capital_gains_stats.mean  || 0), '', 'orange'),
-    kpiCard('Max Capital Gains', usd(cg.capital_gains_stats.max   || 0), '', 'red'),
-    kpiCard('Avg Dividends',     usd(cg.dividend_income_stats.mean || 0),'', 'green'),
-    kpiCard('CG as % of Income', pct(cg.avg_cg_pct_of_income),         '', 'accent'),
+    kpiCard('CG Filers',         num(cg.cg_filer_count),                 `${cg.cg_filer_pct}% of all filers`, 'indigo'),
+    kpiCard('Avg Capital Gains', usd(cg.capital_gains_stats.mean  || 0), '',                                   'warm'),
+    kpiCard('Max Capital Gains', usd(cg.capital_gains_stats.max   || 0), '',                                   'rose'),
+    kpiCard('Avg Dividends',     usd(cg.dividend_income_stats.mean|| 0), '',                                   'green'),
+    kpiCard('CG % of Income',    pct(cg.avg_cg_pct_of_income),           '',                                   'indigo'),
   ].join('');
 
-  const cgStats  = cg.capital_gains_stats;
-  const divStats = cg.dividend_income_stats;
+  const cgs = cg.capital_gains_stats;
+  const dvs = cg.dividend_income_stats;
+  const labels = ['Mean','Median','Min','Max'];
 
   mkChart('chartCGStats', {
     type: 'bar',
-    data: {
-      labels: ['Mean', 'Median', 'Min', 'Max'],
-      datasets: [{ label: 'Capital Gains ($)', data: [cgStats.mean, cgStats.median, cgStats.min, cgStats.max], backgroundColor: PALETTE[2], borderRadius: 6 }],
-    },
-    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } } },
+    data: { labels, datasets: [{ label:'Capital Gains', data:[cgs.mean,cgs.median,cgs.min,cgs.max], backgroundColor:[C.amber,C.amber,C.violet,C.rose], borderRadius:7, borderSkipped:false }] },
+    options: { plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' '+usd(c.raw)}} }, scales:SCALES },
   });
 
   mkChart('chartDivStats', {
     type: 'bar',
-    data: {
-      labels: ['Mean', 'Median', 'Min', 'Max'],
-      datasets: [{ label: 'Dividends ($)', data: [divStats.mean, divStats.median, divStats.min, divStats.max], backgroundColor: PALETTE[1], borderRadius: 6 }],
-    },
-    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } } },
+    data: { labels, datasets: [{ label:'Dividends', data:[dvs.mean,dvs.median,dvs.min,dvs.max], backgroundColor:[C.emerald,C.emerald,C.violet,C.indigo], borderRadius:7, borderSkipped:false }] },
+    options: { plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' '+usd(c.raw)}} }, scales:SCALES },
   });
 }
 
-// ---- CREDITS ---------------------------------------------------------------
+/* ── CREDITS ── */
 async function renderCredits(full) {
   const cd = full.credits_dependents;
-
   document.getElementById('kpiCredits').innerHTML = [
-    kpiCard('Avg Child Tax Credit',   usd(cd.avg_credit),              '', 'green'),
-    kpiCard('Total Credits Claimed',  usd(cd.total_credits_claimed),   '', 'accent'),
-    kpiCard('Avg Credit Stats Max',   usd(cd.credit_stats.max || 0),   '', 'orange'),
+    kpiCard('Avg Child Tax Credit',  usd(cd.avg_credit),             '', 'green'),
+    kpiCard('Total Credits Claimed', usd(cd.total_credits_claimed),  '', 'indigo'),
+    kpiCard('Max Credit',            usd(cd.credit_stats.max || 0),  '', 'warm'),
   ].join('');
 
   const dd = cd.dependent_distribution;
   mkChart('chartDependents', {
-    type: 'pie',
+    type: 'doughnut',
     data: {
-      labels: Object.keys(dd).map(k => `${k} dep.`),
-      datasets: [{ data: Object.values(dd), backgroundColor: PALETTE, borderWidth: 0 }],
+      labels: Object.keys(dd).map(k=>`${k} dependent${k==='1'?'':'s'}`),
+      datasets: [{ data:Object.values(dd), backgroundColor:PALETTE, borderWidth:0, hoverOffset:8 }],
     },
-    options: { plugins: { legend: { labels: { color: '#8891aa' } } } },
+    options: { plugins:{ legend:LEGEND }, cutout:'55%' },
   });
 
   const tbd = cd.avg_tax_by_dependents;
   mkChart('chartTaxByDeps', {
     type: 'line',
     data: {
-      labels: Object.keys(tbd).map(k => `${k} dep.`),
+      labels: Object.keys(tbd).map(k=>`${k} dep.`),
       datasets: [{
-        label: 'Avg Total Tax ($)',
+        label: 'Avg Total Tax',
         data: Object.values(tbd),
-        borderColor: PALETTE[3],
-        backgroundColor: 'rgba(247,95,95,0.12)',
-        tension: 0.4,
+        borderColor: C.rose,
+        backgroundColor: gradFill('chartTaxByDeps', 'fb7185', 0.22),
+        tension: 0.45,
         fill: true,
-        pointBackgroundColor: PALETTE[3],
+        pointBackgroundColor: C.rose,
+        pointBorderColor: 'transparent',
+        pointRadius: 5,
+        pointHoverRadius: 7,
       }],
     },
-    options: CHART_DEFAULTS,
+    options: { plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' '+usd(c.raw)}} }, scales:SCALES },
   });
 }
 
-// ---- FICA ------------------------------------------------------------------
+/* ── FICA ── */
 async function renderFICA(full) {
   const f = full.fica;
-
   document.getElementById('kpiFica').innerHTML = [
-    kpiCard('Total FICA Collected',    usd(f.total_fica_collected),              '', 'accent'),
-    kpiCard('Avg FICA % of Income',    pct(f.avg_fica_pct_of_income),            '', 'orange'),
-    kpiCard('Avg Social Security',     usd(f.social_security_stats.mean || 0),   '', 'green'),
-    kpiCard('Avg Medicare',            usd(f.medicare_stats.mean || 0),          '', 'accent'),
-    kpiCard('Total SS Collected',      usd(f.social_security_stats.total || 0),  '', ''),
-    kpiCard('Total Medicare Collected',usd(f.medicare_stats.total || 0),         '', ''),
+    kpiCard('Total FICA Collected',    usd(f.total_fica_collected),            '', 'indigo'),
+    kpiCard('Avg FICA % of Income',    pct(f.avg_fica_pct_of_income),          '', 'warm'),
+    kpiCard('Avg Social Security',     usd(f.social_security_stats.mean || 0), '', 'green'),
+    kpiCard('Avg Medicare',            usd(f.medicare_stats.mean        || 0), '', 'indigo'),
+    kpiCard('Total SS Collected',      usd(f.social_security_stats.total|| 0), '', ''),
+    kpiCard('Total Medicare',          usd(f.medicare_stats.total       || 0), '', ''),
   ].join('');
 
   const ss  = f.social_security_stats;
   const med = f.medicare_stats;
-
   mkChart('chartFICA', {
     type: 'bar',
     data: {
-      labels: ['Mean', 'Median', 'Min', 'Max'],
+      labels: ['Mean','Median','Min','Max'],
       datasets: [
-        { label: 'Social Security', data: [ss.mean, ss.median, ss.min, ss.max],   backgroundColor: PALETTE[0], borderRadius: 6 },
-        { label: 'Medicare',        data: [med.mean, med.median, med.min, med.max], backgroundColor: PALETTE[2], borderRadius: 6 },
+        { label:'Social Security', data:[ss.mean, ss.median, ss.min, ss.max],   backgroundColor:C.indigo, borderRadius:7, borderSkipped:false },
+        { label:'Medicare',        data:[med.mean,med.median,med.min,med.max],  backgroundColor:C.cyan,   borderRadius:7, borderSkipped:false },
       ],
     },
-    options: CHART_DEFAULTS,
+    options: { plugins:{ legend:LEGEND, tooltip:{callbacks:{label:c=>' '+usd(c.raw)}} }, scales:SCALES },
   });
 }
 
-// ---------------------------------------------------------------------------
-// Records table
-// ---------------------------------------------------------------------------
-let _recOffset = 0;
-let _recTotal  = 0;
+/* ── RECORDS ── */
+let _recOffset=0, _recTotal=0;
+const COLS = ['taxpayer_id','filing_status','state','total_income','taxable_income','federal_tax','state_tax','fica_total','total_tax_liability','effective_tax_rate','marginal_tax_rate','refund_or_owed','uses_itemized'];
 
-const DISPLAYED_COLS = [
-  'taxpayer_id','filing_status','state','total_income','taxable_income',
-  'federal_tax','state_tax','fica_total','total_tax_liability',
-  'effective_tax_rate','marginal_tax_rate','refund_or_owed','uses_itemized',
-];
-
-async function loadRecords(offset = 0) {
-  const data = await apiFetch(`/api/records?limit=${PAGE_SIZE}&offset=${offset}`);
-  _recOffset = offset;
-  _recTotal  = data.total;
+async function loadRecords(offset=0) {
+  const data    = await apiFetch(`/api/records?limit=${PAGE_SIZE}&offset=${offset}`);
+  _recOffset    = offset;
+  _recTotal     = data.total;
   const records = data.records;
 
   document.getElementById('recordsTotal').textContent = `${num(_recTotal)} total records`;
-  document.getElementById('pageInfo').textContent =
-    `${offset + 1}–${Math.min(offset + PAGE_SIZE, _recTotal)}`;
+  document.getElementById('pageInfo').textContent = `${offset+1}–${Math.min(offset+PAGE_SIZE,_recTotal)}`;
+  document.getElementById('btnPrev').disabled = offset===0;
+  document.getElementById('btnNext').disabled = offset+PAGE_SIZE>=_recTotal;
 
-  document.getElementById('btnPrev').disabled = offset === 0;
-  document.getElementById('btnNext').disabled = offset + PAGE_SIZE >= _recTotal;
-
-  const cols = records.length ? DISPLAYED_COLS : [];
-  document.getElementById('tblRecordsHead').innerHTML =
-    `<tr>${cols.map(c => `<th>${cap(c)}</th>`).join('')}</tr>`;
-
-  document.getElementById('tblRecordsBody').innerHTML = records.map(r => {
-    const cells = DISPLAYED_COLS.map(col => {
+  document.getElementById('tblRecordsHead').innerHTML = `<tr>${COLS.map(c=>`<th>${cap(c)}</th>`).join('')}</tr>`;
+  document.getElementById('tblRecordsBody').innerHTML = records.map(r=>{
+    const cells = COLS.map(col=>{
       let val = r[col];
-      const isNum = typeof val === 'number';
-      if (['total_income','taxable_income','federal_tax','state_tax',
-           'fica_total','total_tax_liability','refund_or_owed'].includes(col)) val = usd(val);
+      if (['total_income','taxable_income','federal_tax','state_tax','fica_total','total_tax_liability','refund_or_owed'].includes(col)) val = usd(val);
       else if (['effective_tax_rate','marginal_tax_rate'].includes(col)) val = pct(val);
-      else if (col === 'refund_or_owed') val = usd(val);
-      const cls = col === 'refund_or_owed' ? (Number(r[col]) >= 0 ? 'green' : 'red') : '';
+      const cls = col==='refund_or_owed' ? (Number(r[col])>=0?'c-green':'c-rose') : '';
       return `<td class="${cls}">${val}</td>`;
     });
     return `<tr>${cells.join('')}</tr>`;
   }).join('');
 }
 
-// ---------------------------------------------------------------------------
-// Navigation
-// ---------------------------------------------------------------------------
-const TITLES = {
-  summary:'Dashboard', income:'Income Distribution', taxrates:'Tax Rates',
-  deductions:'Deductions', refunds:'Refunds & Owed', state:'By State',
-  capgains:'Capital Gains', credits:'Credits & Dependents', fica:'FICA / Payroll',
-  records:'Raw Records',
-};
+/* ── Navigation ── */
+const TITLES = { summary:'Dashboard', income:'Income Distribution', taxrates:'Tax Rates', deductions:'Deductions', refunds:'Refunds & Owed', state:'By State', capgains:'Capital Gains', credits:'Credits & Dependents', fica:'FICA / Payroll', records:'Raw Records' };
 
 function navigate(section) {
-  document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.section === section));
-  document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === `section-${section}`));
-  document.getElementById('pageTitle').textContent = TITLES[section] || section;
+  document.querySelectorAll('.nav-link').forEach(l=>l.classList.toggle('active', l.dataset.section===section));
+  document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active', s.id===`section-${section}`));
+  const title = document.getElementById('pageTitle');
+  if (title) title.textContent = TITLES[section] || section;
 }
 
-// ---------------------------------------------------------------------------
-// Boot
-// ---------------------------------------------------------------------------
+/* ── Boot ── */
 let _full = null;
 
 async function boot() {
-  setStatus(false, 'Loading…');
+  setLoader(15, 'Connecting to API…');
   try {
+    setLoader(35, 'Fetching analytics…');
     _full = await apiFetch('/api/full');
-    setStatus(true, `${num(_full.summary.total_taxpayers)} records loaded`);
-    toast('Data loaded successfully', 'ok');
-
+    setLoader(75, 'Rendering dashboard…');
     await renderSummary(_full);
     navigate('summary');
+    setLoader(100, 'Done');
+    setStatus(true, `${num(_full.summary.total_taxpayers)} records loaded`);
+    setTimeout(hideLoader, 500);
+    toast('Dashboard ready', 'ok');
 
-    // Pre-render visible charts; others rendered on first visit
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.addEventListener('click', async e => {
+    /* Lazy-render on nav click */
+    document.querySelectorAll('.nav-link').forEach(link=>{
+      link.addEventListener('click', async e=>{
         e.preventDefault();
         const sec = link.dataset.section;
         navigate(sec);
-        if (sec === 'income')      await renderIncome(_full);
-        else if (sec === 'taxrates')   await renderTaxRates(_full);
-        else if (sec === 'deductions') await renderDeductions(_full);
-        else if (sec === 'refunds')    await renderRefunds(_full);
-        else if (sec === 'state')      await renderState(_full);
-        else if (sec === 'capgains')   await renderCapGains(_full);
-        else if (sec === 'credits')    await renderCredits(_full);
-        else if (sec === 'fica')       await renderFICA(_full);
-        else if (sec === 'records')    await loadRecords(0);
-        else if (sec === 'summary')    await renderSummary(_full);
+        if      (sec==='income')      await renderIncome(_full);
+        else if (sec==='taxrates')    await renderTaxRates(_full);
+        else if (sec==='deductions')  await renderDeductions(_full);
+        else if (sec==='refunds')     await renderRefunds(_full);
+        else if (sec==='state')       await renderState(_full);
+        else if (sec==='capgains')    await renderCapGains(_full);
+        else if (sec==='credits')     await renderCredits(_full);
+        else if (sec==='fica')        await renderFICA(_full);
+        else if (sec==='records')     await loadRecords(0);
+        else if (sec==='summary')     await renderSummary(_full);
       });
     });
-
-  } catch (err) {
-    setStatus(false, 'Error loading data');
-    toast('Failed to load data: ' + err.message, 'error');
+  } catch(err) {
+    setLoader(100,'Error');
+    setStatus(false,'Error loading data');
+    toast('Failed to load: '+err.message, 'error');
+    setTimeout(hideLoader, 600);
     console.error(err);
   }
 }
 
-// Regenerate
-document.getElementById('btnRegen').addEventListener('click', async () => {
+/* ── Regenerate ── */
+document.getElementById('btnRegen').addEventListener('click', async()=>{
+  setStatus(false,'Regenerating…');
+  toast('Regenerating dataset…', 'ok');
   try {
-    setStatus(false, 'Regenerating…');
-    await fetch('/api/regenerate?records=500&seed=' + Math.floor(Math.random() * 9999), { method: 'POST' });
+    const seed = Math.floor(Math.random()*99999);
+    await fetch(`/api/regenerate?records=500&seed=${seed}`, {method:'POST'});
     _full = await apiFetch('/api/full');
-    setStatus(true, `${num(_full.summary.total_taxpayers)} records loaded`);
+    setStatus(true,`${num(_full.summary.total_taxpayers)} records loaded`);
     await renderSummary(_full);
     navigate('summary');
-    toast('Dataset regenerated!', 'ok');
-  } catch (err) {
-    toast('Regenerate failed: ' + err.message, 'error');
-    setStatus(false, 'Error');
+    toast('New dataset generated!', 'ok');
+  } catch(err) {
+    toast('Regenerate failed: '+err.message, 'error');
+    setStatus(false,'Error');
   }
 });
 
-// CSV Upload
-document.getElementById('csvUpload').addEventListener('change', async e => {
+/* ── CSV Upload ── */
+document.getElementById('csvUpload').addEventListener('change', async e=>{
   const file = e.target.files[0];
   if (!file) return;
   const form = new FormData();
   form.append('file', file);
+  toast('Uploading…', 'ok');
   try {
-    const res = await fetch('/api/upload', { method: 'POST', body: form });
+    const res  = await fetch('/api/upload',{method:'POST',body:form});
     const json = await res.json();
-    if (!res.ok) throw new Error(json.detail || 'Upload failed');
+    if (!res.ok) throw new Error(json.detail||'Upload failed');
     _full = await apiFetch('/api/full');
-    setStatus(true, `${num(_full.summary.total_taxpayers)} records loaded`);
+    setStatus(true,`${num(_full.summary.total_taxpayers)} records loaded`);
     await renderSummary(_full);
     navigate('summary');
     toast(`Uploaded ${num(json.records_loaded)} records`, 'ok');
-  } catch (err) {
-    toast('Upload failed: ' + err.message, 'error');
+  } catch(err) {
+    toast('Upload failed: '+err.message, 'error');
   }
-  e.target.value = '';
+  e.target.value='';
 });
 
-// Records pagination
-document.getElementById('btnPrev').addEventListener('click', () => loadRecords(_recOffset - PAGE_SIZE));
-document.getElementById('btnNext').addEventListener('click', () => loadRecords(_recOffset + PAGE_SIZE));
+/* ── Pagination ── */
+document.getElementById('btnPrev').addEventListener('click',()=>loadRecords(_recOffset-PAGE_SIZE));
+document.getElementById('btnNext').addEventListener('click',()=>loadRecords(_recOffset+PAGE_SIZE));
 
-// Start
+/* ── Mobile sidebar toggle ── */
+const menuToggle = document.getElementById('menuToggle');
+const sidebar    = document.getElementById('sidebar');
+if (menuToggle && sidebar) {
+  menuToggle.addEventListener('click',()=>sidebar.classList.toggle('open'));
+  document.addEventListener('click',e=>{ if(!sidebar.contains(e.target)&&!menuToggle.contains(e.target)) sidebar.classList.remove('open'); });
+}
+
+/* Start */
 boot();
