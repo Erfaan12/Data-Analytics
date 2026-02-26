@@ -1,0 +1,48 @@
+version: "3.9"
+
+# ============================================================
+# Tax Data Analyzer – Docker Compose
+#
+# Local dev:   docker compose up --build
+# Production:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ============================================================
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: tax-analyzer:latest
+    container_name: tax_analyzer_app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:${PORT:-8000}"
+    environment:
+      PORT:          "${PORT:-8000}"
+      HOST:          "0.0.0.0"
+      DATA_FILE:     "/data/tax_data.csv"
+      DATA_ROWS:     "${DATA_ROWS:-500}"
+      DATA_SEED:     "${DATA_SEED:-42}"
+      CORS_ORIGINS:  "${CORS_ORIGINS:-*}"
+      LOG_LEVEL:     "${LOG_LEVEL:-info}"
+    volumes:
+      # Named volume keeps the generated CSV between restarts
+      - tax_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8000}/healthz')"]
+      interval: 30s
+      timeout:  5s
+      retries:  3
+      start_period: 15s
+    # Resource limits – tune for your host
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+volumes:
+  tax_data:
+    driver: local
